@@ -10,6 +10,11 @@ import {
     Alert 
 } from 'react-native'
 
+import todayImg from '../../assets/imgs/today.jpg'
+import tomorrowImg from '../../assets/imgs/tomorrow.jpg'
+import weekImg from '../../assets/imgs/week.jpg'
+import monthImg from '../../assets/imgs/month.jpg'
+
 import AsyncStorage from '@react-native-community/async-storage'
 import Icon from 'react-native-vector-icons/FontAwesome'
 import Axios from 'axios'
@@ -18,7 +23,6 @@ import 'moment/locale/pt-br'
 
 import { server, showError } from '../common'
 import Styles from '../Styles'
-import todayImg from '../../assets/imgs/today.jpg'
 import Task from '../components/Task'
 import AddTask from './AddTask'
 
@@ -49,7 +53,9 @@ export default class TaskList extends Component{
     // CARREGA A TAREFA
     loadTask = async () => {
         try {
-            const maxDate = moment().format('YYYY-MM-DD 23:59:59')
+            const maxDate = moment()
+                .add({ days: this.props.daysAhead })
+                .format('YYYY-MM-DD 23:59:59')
             const res = await Axios.get(`${server}/tasks?date=${maxDate}`)
             this.setState({ tasks: res.data }, this.filterTask)
         } catch(e) {
@@ -117,6 +123,25 @@ export default class TaskList extends Component{
         }
     }
 
+    // ADICIONA A IMAGEM CORRETA
+    getImage = () => {
+        switch(this.props.dayAhead) {
+            case 0: return todayImg
+            case 1: return tomorrowImg
+            case 7: return weekImg
+            default: return monthImg
+        }
+    }
+
+    getColors = () => {
+        switch(this.props.dayAhead) {
+            case 0: return Styles.colors.today
+            case 1: return Styles.colors.tomorrow
+            case 7: return Styles.colors.week
+            default: return Styles.colors.month
+        }
+    }
+
     render(){
         const today = moment().locale('pt-br').format('ddd, D [de] MMMM')
         return(
@@ -125,25 +150,30 @@ export default class TaskList extends Component{
                     onCancel={() => this.setState({ showAddTask: false })}
                     onSave={this.addTask} />
                 <ImageBackground 
-                    source={todayImg} 
+                    source={this.getImage()} 
                     style={styles.background}
                 >
                     <View style={styles.iconBar}>
+                        <TouchableOpacity onPress={() => this.props.navigation.openDrawer()}>
+                            <Icon name='bars' size={20} color={Styles.colors.secondary} />
+                        </TouchableOpacity>
                         <TouchableOpacity onPress={this.toggleFilter}>
                             <Icon name={this.state.showDone ? 'eye' : 'eye-slash'} size={20} color={Styles.colors.secondary} />
                         </TouchableOpacity>
                     </View>
+
                     <View style={styles.titleBar}>
-                        <Text style={styles.title}>Hoje</Text>
+                        <Text style={styles.title}>{this.props.title}</Text>
                         <Text style={styles.subtitle}>{today}</Text>
                     </View>
+
                 </ImageBackground>
                 <View style={styles.taskContainer}>
                     <FlatList data={this.state.visibleTask}
                         keyExtractor={item => `${item.id}`}
                         renderItem={({item}) => <Task {...item} toggleTask={this.toggleTask} onDelete={this.deleteTask} />} />
                 </View>
-                <TouchableOpacity style={styles.addButton}
+                <TouchableOpacity style={[styles.addButton, { backgroundColor: this.getColors() }]}
                     activeOpacity={0.7}
                     onPress={() => this.setState({ showAddTask: true })} >
                     <Icon name='plus' size={20} color={Styles.colors.secondary} />
@@ -184,7 +214,7 @@ const styles = StyleSheet.create({
     iconBar: {
         flexDirection: 'row',
         marginHorizontal: 20,
-        justifyContent: 'flex-end',
+        justifyContent: 'space-between',
         marginTop: Platform.OS === 'ios' ? 45 : 10
     },
     addButton: {
@@ -194,7 +224,6 @@ const styles = StyleSheet.create({
         width: 50,
         height: 50,
         borderRadius: 25,
-        backgroundColor: Styles.colors.today,
         alignItems: 'center',
         justifyContent: 'center'
     }
