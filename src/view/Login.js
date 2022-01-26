@@ -13,7 +13,7 @@ import backgroundImage from '../../assets/imgs/login.jpg'
 import Styles from '../Styles'
 import AuthInput from '../components/AuthInput'
 
-import { server, showError, showSuccess } from '../Common'
+import { server, showError, showSuccess } from '../common'
 
 const initialState = { 
     name: '',
